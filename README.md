@@ -1,4 +1,11 @@
-# pixcap
+# pixcap test
+
+## Author: Loc Pham: QuangLoc0311
+### Start project: 
+---------------------------------------------------------------
+#### install: yarn
+#### command: ts-node index.ts
+
 /* Below is an example organisation chart. At the top is the ceo, Mark Zuckerberg. Mark's subordinates are Sarah, Tyler, Bruce and Georgina.
 Mark Zuckerberg:
 - Sarah Donald:
