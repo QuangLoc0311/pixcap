@@ -41,8 +41,6 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
      * subordinates that have been traversed so far in the search for the employee with the given
      * `empId`. It is initialized as an empty array `[]` and is updated recursively as the function
      * traverses through the sub
-     * @param {Employee} [empObj] - The `empObj` parameter is an object representing the employee that
-     * needs to be added to the hierarchy. It contains the following properties:
      * @returns The function `findShortestPathEmp` returns an object with two properties: `path` and
      * `employee`. The `path` property is an array of numbers representing the path to the employee
      * with the specified `empId`. The `employee` property is the Employee object with the specified
@@ -52,10 +50,8 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
         root: Employee,
         empId: number,
         path: number[] = [],
-        empObj?: Employee
     ): { path: number[]; employee: Employee } | null {
         if (root?.uniqueId === empId) {
-            root.subordinates.push({ ...empObj, subordinates: [] });
             return {
                 path,
                 employee: root,
@@ -68,7 +64,6 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
                 root.subordinates[i],
                 empId,
                 newPath,
-                empObj
             );
             if (found) {
                 return found;
@@ -159,6 +154,7 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
         const lastRedo = this.redoOperations.pop();
         const { employeeId, supervisorId } = lastRedo;
         this.move(employeeId, supervisorId)
+        console.dir(this.ceo, {depth: null})
     }
 
     /**
@@ -208,7 +204,7 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
 
                 //push employee to prevSupervisor
                 prevSupervisor.subordinates.push({ ...employee, subordinates: subordinatesOfEmployee })
-
+                
                 this.redoOperations.push(lastMove);
             }
         }
@@ -302,5 +298,7 @@ const ceo = {
 
 const app = new EmployeeOrgApp(ceo);
 app.move(9, 12);
+app.move(10,12);
+app.undo();
 app.undo();
 app.redo();
