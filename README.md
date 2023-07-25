@@ -4,7 +4,10 @@
 ### Start project: 
 ---------------------------------------------------------------
 #### install: yarn
-#### command: ts-node index.ts
+#### command: cd src --> ts-node index.ts
+#### test: yarn test
+
+
 
 /* Below is an example organisation chart. At the top is the ceo, Mark Zuckerberg. Mark's subordinates are Sarah, Tyler, Bruce and Georgina.
 Mark Zuckerberg:

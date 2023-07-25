@@ -1,11 +1,11 @@
-interface Employee {
+export interface Employee {
     uniqueId: number;
     name: string;
     subordinates: Employee[];
     parentId?: number[];
 }
 
-interface IEmployeeOrgApp {
+export interface IEmployeeOrgApp {
     ceo: Employee;
     move: (employeeId: number, supervisorId: number) => void;
     undo: () => void;
@@ -19,15 +19,33 @@ interface MoveOperation {
     prevParentEmployeePath: number[];
 }
 
-class EmployeeOrgApp implements IEmployeeOrgApp {
+export class EmployeeOrgApp implements IEmployeeOrgApp {
     ceo: Employee;
     moveOperations: MoveOperation[];
     redoOperations: MoveOperation[];
+    order: (keyof Employee)[];
 
     constructor(ceo: Employee) {
         this.ceo = ceo;
         this.moveOperations = [];
         this.redoOperations = [];
+        this.order = ['uniqueId', 'name', 'subordinates', 'parentId'];
+    }
+
+    /**
+     * The function reorders the keys of an object based on a predefined order.
+     * @param {Employee} obj - The parameter "obj" is an object of type "Employee".
+     * @returns an object of type `Employee` with its keys reordered based on the `order` array.
+     */
+    reorderObjectKeys<Employee>(obj: Employee): Employee {
+        const orderedObj: Partial<Employee> = {};
+
+        this.order.forEach((key) => {
+            if(!obj[key as keyof Employee]) return;
+            orderedObj[key as keyof Employee] = obj[key as keyof Employee];
+        });
+
+        return orderedObj as Employee;
     }
 
     /**
@@ -84,7 +102,7 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
      */
     removeEmployee(root: Employee, pathIndices: number[]): void {
         let employee = root;
-        let parent = null;
+        let parent: Employee = root;
 
         pathIndices.forEach((index) => {
             if (employee && employee.subordinates[index]) {
@@ -99,7 +117,7 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
         if (parent) {
             //remove employee and pop out all subordinates and update parentId list of each subordinate
             parent.subordinates.splice(pathIndices[pathIndices.length - 1], 1);
-            const empSub = [...(employee.subordinates).map(e => ({ ...e, parentId: [...(e.parentId || []), employee.uniqueId] }))].filter((emp) => emp.uniqueId);
+            const empSub = [...(employee.subordinates).map(e => (this.reorderObjectKeys({ ...e, parentId: [...(e.parentId || []), employee.uniqueId] })))].filter((emp) => emp.uniqueId);
             if (empSub.length) {
                 parent.subordinates.push(...empSub);
             }
@@ -123,7 +141,7 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
             const employee = employeePath.employee;
 
             const supervisorSub = supervisor.subordinates.filter(emp => emp.uniqueId)
-            supervisorSub.push({ ...employee, subordinates: [] })
+            supervisorSub.push(this.reorderObjectKeys({ ...employee, subordinates: [] }))
             supervisor.subordinates = [...supervisorSub];
 
             const prevParentEmployeePath = [...employeePath.path]
@@ -152,9 +170,10 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
         }
 
         const lastRedo = this.redoOperations.pop();
-        const { employeeId, supervisorId } = lastRedo;
-        this.move(employeeId, supervisorId)
-        console.dir(this.ceo, {depth: null})
+        if (lastRedo) {
+            const { employeeId, supervisorId } = lastRedo;
+            this.move(employeeId, supervisorId)
+        } 
     }
 
     /**
@@ -173,14 +192,14 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
         if (lastMove) {
             const { employeeId, prevParentEmployeePath } = lastMove;
             const employeePath = this.findShortestPathEmp(this.ceo, employeeId);
-            const employee = employeePath.employee
-            if (employeePath) {
+            const employee = employeePath?.employee
+            if (employeePath && employee) {
                 this.removeEmployee(this.ceo, employeePath.path);
 
                 const prevSupervisor = prevParentEmployeePath.reduce((root, index) => root.subordinates?.[index], this.ceo)
 
                 //check if current subordinates are belongs to previous employee
-                const listSubIdOfEmployee = []
+                const listSubIdOfEmployee: number[] = []
                 const checkSubordinates = prevSupervisor.subordinates.filter(e => {
                     if (e.parentId && e.parentId[lastIndex] === employee.uniqueId) {
                         listSubIdOfEmployee.push(e.uniqueId)
@@ -188,10 +207,10 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
                     }
                 })
 
-                let subordinatesOfEmployee = []
+                let subordinatesOfEmployee: Employee[] = []
                 if (listSubIdOfEmployee?.length) {
                     subordinatesOfEmployee = [...checkSubordinates].map(e => {
-                        const parentId = [...e.parentId]
+                        const parentId = [...(e.parentId || [])]
                         parentId.pop();
                         return {
                             ...e,
@@ -203,7 +222,7 @@ class EmployeeOrgApp implements IEmployeeOrgApp {
                 }
 
                 //push employee to prevSupervisor
-                prevSupervisor.subordinates.push({ ...employee, subordinates: subordinatesOfEmployee })
+                prevSupervisor.subordinates.push(this.reorderObjectKeys({ ...employee, subordinates: subordinatesOfEmployee }))
                 
                 this.redoOperations.push(lastMove);
             }
